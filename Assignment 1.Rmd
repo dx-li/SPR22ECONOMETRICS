@@ -1,0 +1,180 @@
+---
+title: "Assignment 1"
+author: "Daniel Li"
+date: "`r Sys.Date()`"
+output:
+  html_document: default
+  pdf_document: default
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+knitr::opts_chunk$set(fig.dim=c(6, 4))
+```
+
+## Problem 1
+### 1?1
+For the model $Y_i = \beta_1X_i + u_i$
+
+* Derive the OLS estimator of $\beta_1$
+
+$$
+\underset{\beta_1}{\text{Minimize}}\sum_{i = 1}^{n}(Y_i-\beta_1X_i)^2\\
+$$
+
+$$
+\begin{aligned}
+\frac{\partial}{\partial \beta_1}\sum_{i = 1}^{n}(Y_i-\beta_1X_i)^2 &= -2\s?m_{i = 1}^{n}(Y_i-\beta_1X_i)(X_i)\\
+&= -2\sum_{i = 1}^{n}Y_iX_i - \beta_1 X_i^2\\
+\text{Find the zeros}\\
+0 &= -2\sum_{i = 1}^{n}Y_iX_i - \beta_1 X_i^2\\
+0 &= \sum_{i = 1}^{n}Y_iX_i - \beta_1 X_i^2\\
+0 &= \sum_{i = 1}^{n}Y_iX_i - \beta_1 \sum_{i = 1}^{n} ?_i^2\\
+\beta_1 \sum_{i = 1}^{n} X_i^2 &= \sum_{i = 1}^{n}Y_iX_i\\
+\beta_1 &= \frac{\sum_{i = 1}^{n}Y_iX_i}{\sum_{i = 1}^{n} X_i^2}
+\end{aligned}
+$$
+
+* This model is called regression through the origin: can you explain why?
+  * There is no constant paramet?r $\beta_0$, so the best fit line is forced to go through the origin.
+  
+* If the intercept $\beta_0$ is actually different from zero, do you think this model will provide a biased estimate
+of the slope coefficient? Provide an intuitive argument for why th?s could be the case (graphical?)
+  * It will give a biased estimate of the slope coefficient because you won't be able to make the mean of the errors zero. Let's say that you have a series of values that hover around 1000 on the y axis. Then if you force t?e model through the origin, you have an angled line when the line that makes the mean error zero is a straight line at y=1000. 
+  
+### 1.2
+What happens to the OLS estimators $\beta_0$ and $\beta_1$ if we multiply the dependent variable by $100$,
+that is, t?e regression model becomes $(100Y_i) = \beta_0 + \beta_1X_i + u_i$? and what if we multiply the independent
+variable $X_i$ by 100, that is, $Y_i = \beta_0 + \beta_1(100X_i) + u_i$? Justify your answer based on the formula of the
+OLS estimators.
+
+* If you m?ltiply the dependent variable by $100$
+
+  $\beta_1$ is multiplied by 100.
+$$
+  \beta_{1,new} = \frac{Cov(x,100y)}{Var(x)} = \frac{E[(x-Ex)(100y-E[100y])]}{Var(x)} = \frac{100Cov(x,y)}{Var(x)} = 100\beta_1
+$$
+  $\beta_0$ is also multiplied by 100.
+$$
+\beta_?0,new} = E[100y] - 100\beta_1\bar{x} = 100(\bar{y} - \beta_1\bar{x}) = 100\beta_0
+$$
+* If you mutiply the independent variable by $100$
+
+  $\beta_1$ is scaled by $\frac{1}{100}$
+$$
+  \beta_{1,new} = \frac{Cov(100x,y)}{Var(100x)} = \frac{E[(100x-E[100x])(y-?y)]}{Var(100x)} = \frac{100Cov(x,y)}{100^2Var(x)} = \frac{\beta_1}{100}
+$$
+  $\beta_0$ doesn't change
+$$
+\beta_{0,new} = E[y] - \frac{\beta_1}{100}E[100x] = E[y] -\frac{\beta_1}{100}100E[x] = \beta_0
+$$
+
+## Problem 2
+### 2.1
+```{r 2.1, echo=TRUE}
+require(r?adr)
+sample_orig_2003 <- read_delim("sample_2003/sample_orig_2003.txt", 
+    "|", escape_double = FALSE, col_names = FALSE, 
+    trim_ws = TRUE)
+
+orig.names <- c("Credit_Score","First_Payment _ate","First_Time_Homebuyer", "Maturity_Date",
+"MSA","Mortgage_I?surance_Percentage","Number_Units","Occupancy_Status","CLTV",
+"DTI","UPB","LTV","Interest_Rate","Channel","Prepayment_Penalty",
+"Amortization_Type","State","Property_Type","Postal_Code","Sequence_Number",
+"Purpose","Loan_Term","Number_Borrowers","Seller_Na?e","Servicer_Name",
+"Super_Conforming","Pre-HARP_Loan","Program_Indicator","HARP_Indicator",
+"Valuation_Method","Interest_Only")
+
+colnames(sample_orig_2003) <- orig.names
+```
+
+## Problem 3
+### 3.1
+Plot a histogram of credit score and the interest rate
+```{? 3.1, echo=TRUE  }
+require(ggplot2)
+require(dplyr)
+data_2003_missing_removed <- sample_orig_2003 %>% 
+  filter(Credit_Score != 9999) %>% 
+  filter(Interest_Rate != 9999)
+ggplot(data_2003_missing_removed, aes(Credit_Score)) + 
+  geom_histogram(bins = 25) + ?heme_classic()
+```
+
+
+```{r 3.1 interest rate graph, echo=TRUE}
+ggplot(data_2003_missing_removed, aes(Interest_Rate)) + 
+  geom_histogram(bins = 25) + theme_classic()
+```
+
+The distribution of credit score is skewed left. There may be outliers on the left si?e below 550. One reason for the skew is that the range of credit score is limited as no one can be higher than 850. There is no discernable skew in the interest rate. There may be outliers on the right side above seven percent.
+
+### 3.2
+Calculate the mean,?standard deviation, skewness, and kurtosis of the Credit_Score variable and
+discuss the results
+```{r 3.2, echo=TRUE}
+data_mean <- mean(data_2003_missing_removed$Credit_Score)
+data_stddev <- sd(data_2003_missing_removed$Credit_Score)
+
+calculate_nth_central?moment_equal_prob <- function(data, n) {
+  E1 <- mean(data)
+  #print(E1)
+  sum <- 0
+  for (i in data){
+    sum <- sum + (i-E1)^n
+    #print(sum)
+  }
+  return(sum/length(data))
+}
+
+skewness <- calculate_nth_central_moment_equal_prob(data_2003_missing_removed?Credit_Score, 3)/sd(data_2003_missing_removed$Credit_Score)^3
+kurtosis <- calculate_nth_central_moment_equal_prob(data_2003_missing_removed$Credit_Score, 4)/sd(data_2003_missing_removed$Credit_Score)^4
+```
+
+mean = `r data_mean`
+
+standard deviation = `r dat?_stddev`
+
+skewness = `r skewness`
+
+kurtosis = `r kurtosis`
+
+We can see that the mean credit score is quite good. The standard deviation implies that there's variability in the data. The skewness is negative as we expected from the histogram. The excess kur?osis is quite close to zero, so there's not much of the data in the tails. 
+
+### 3.3
+Do a scatter plot of the credit score and interest rate variables and discuss whether the plot shows
+any dependence between the two variables
+```{r 3.3, echo=TRUE}
+ggplot(?ata_2003_missing_removed, aes(Credit_Score, Interest_Rate)) + 
+  geom_point(alpha = 0.2) + theme_classic()
+```
+
+As far as I can tell, there doesn't seem to be a relationship between the two variables.
+
+## Problem 4
+### 4.1
+
+```{r 4.1, echo=TRUE}
+calculate_?ls_coeff <- function(indep, depen){
+  beta1 <- cov(indep, depen)/var(indep)
+  beta0 <- mean(depen) - beta1*mean(indep)
+  return(c(beta0, beta1))
+}
+
+intrate_vs_creditscore <- calculate_ols_coeff(data_2003_missing_removed$Credit_Score, data_2003_missing_remo?ed$Interest_Rate)
+```
+
+$\beta_0$ is `r intrate_vs_creditscore[1]` and $\beta_1$ is `r intrate_vs_creditscore[2]`
+
+### 4.2
+The slope coefficient is saying that if you increase credit score by one the interest rate decreases by .00193 percent. That is practi?ally no effect considering that the range of credit scores is 300 to 850. I think this makes sense because the main decider of interest rate is the prevailing rate set by the federal reserve, your credit score only determines if or if not and how much a ba?k will lend to you. 
+
+### 4.3
+
+```{r 4.4, echo=TRUE}
+model <- lm(Interest_Rate ~ Credit_Score, data_2003_missing_removed)
+summary.lm(model)
+```
+
+The $R^2$ implies that around $3.7$% of the sample variation in interest rates can be explained by using credit?score to predict interest rates. $SER$ tells us that a typical deviation from the regression line is $.5$.
+
